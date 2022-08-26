@@ -37,12 +37,16 @@ const (
 var (
 	addr = flag.String("addr", "localhost:50051", "the address to connect to")
 	name = flag.String("name", defaultName, "Name to greet")
+	upstream = flag.String("service", "", "service name that will go into HTTP request header")
 )
 
 func main() {
 	flag.Parse()
 	// Set up a connection to the server.
-	conn, err := grpc.Dial(*addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+    opt := []grpc.DialOption{}
+    opt = append(opt, grpc.WithAuthority(*upstream))
+    opt = append(opt, grpc.WithTransportCredentials(insecure.NewCredentials()))
+    conn, err := grpc.Dial(*addr, opt...)
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}

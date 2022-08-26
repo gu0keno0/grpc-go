@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	//"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/credentials/insecure"
 	xdscreds "google.golang.org/grpc/credentials/xds"
 	pb "google.golang.org/grpc/examples/helloworld/helloworld"
@@ -39,6 +40,7 @@ var (
 	target   = flag.String("target", "xds:///localhost:50051", "uri of the Greeter Server, e.g. 'xds:///helloworld-service:8080'")
 	name     = flag.String("name", "world", "name you wished to be greeted by the server")
 	xdsCreds = flag.Bool("xds_creds", false, "whether the server should use xDS APIs to receive security configuration")
+	upstream = flag.String("service", "", "service name that will go into HTTP request header")
 )
 
 func main() {
@@ -56,7 +58,10 @@ func main() {
 			log.Fatalf("failed to create client-side xDS credentials: %v", err)
 		}
 	}
-	conn, err := grpc.Dial(*target, grpc.WithTransportCredentials(creds))
+	opt := []grpc.DialOption{}
+	opt = append(opt, grpc.WithAuthority(*upstream))
+	opt = append(opt, grpc.WithTransportCredentials(creds))
+	conn, err := grpc.Dial(*target, opt...)
 	if err != nil {
 		log.Fatalf("grpc.Dial(%s) failed: %v", *target, err)
 	}
@@ -67,7 +72,7 @@ func main() {
 	c := pb.NewGreeterClient(conn)
 	r, err := c.SayHello(ctx, &pb.HelloRequest{Name: *name})
 	if err != nil {
-		log.Fatalf("could not greet: %v", err)
+		log.Printf("Error: could not greet: %v", err)
 	}
 	log.Printf("Greeting: %s", r.GetMessage())
 }
